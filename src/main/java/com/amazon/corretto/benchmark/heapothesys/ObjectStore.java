@@ -36,7 +36,7 @@ public class ObjectStore implements Runnable {
     final int maxItemInGroup;
 
     private AtomicLong currentSize;
-    private boolean running;
+    private volatile boolean running;
 
     public ObjectStore(final int sizeLimitInMb) {
         this(sizeLimitInMb, DEFAULT_PRUNE_RATIO, DEFAULT_RESHUFFLE_RATIO);

@@ -3,11 +3,8 @@ package com.amazon.corretto.benchmark.heapothesys;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -17,6 +14,7 @@ import java.util.stream.IntStream;
 public class SimpleRunner extends TaskBase {
 
     private final SimpleRunConfig config;
+    private final static AtomicInteger THREAD_COUNTER = new AtomicInteger(0);
 
     public SimpleRunner(SimpleRunConfig config) {
         this.config = config;
@@ -30,7 +28,12 @@ public class SimpleRunner extends TaskBase {
             final ObjectStore store = new ObjectStore(config.getLongLivedInMb(), config.getPruneRatio(),
                     config.getReshuffleRatio());
             new Thread(store).start();
-            final ExecutorService executor = Executors.newFixedThreadPool(config.getNumOfThreads());
+            final ExecutorService executor = Executors.newFixedThreadPool(config.getNumOfThreads(), runnable -> {
+                Thread thread = new Thread(runnable);
+                thread.setDaemon(true);
+                thread.setName("Heapothesys-" + THREAD_COUNTER.incrementAndGet());
+                return thread;
+            });
             final List<Future<Long>> results = executor.invokeAll(createTasks(store));
 
             long sum = 0;
